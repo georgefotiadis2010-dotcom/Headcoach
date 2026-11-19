@@ -1,0 +1,17 @@
+{
+  "name": "Head Coach — Mental Performance",
+  "short_name": "Head Coach",
+  "description": "Elite mental performance & sports psychology courses for developing and elite junior athletes.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0E0F0C",
+  "theme_color": "#0E0F0C",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./headcoach-logo.png",
+      "sizes": "600x109",
+      "type": "image/png"
+    }
+  ]
+}
