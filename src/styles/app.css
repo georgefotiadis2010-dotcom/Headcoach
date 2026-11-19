@@ -2400,3 +2400,629 @@ details:not([open])::details-content {
   gap: 0.65rem;
   padding-top: 0.35rem;
 }
+
+
+/* ==========================================================================
+   FLUID INTERACTIVITY, ANIMATIONS & GAMIFIED MENTAL TRAINING
+   ========================================================================== */
+
+@keyframes hc-view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hc-toast-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -14px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes hc-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  45% { transform: translateX(5px); }
+  70% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+}
+
+@keyframes hc-pulse-ring {
+  0%, 100% {
+    transform: scale(0.98);
+    opacity: 0.14;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.34;
+  }
+}
+
+.hc-view {
+  animation: hc-view-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hc-btn:active:not(:disabled),
+.hc-reset-card:active,
+.hc-level-card:active,
+.hc-checkin__pill:active,
+.hc-challenge__opt:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+
+.hc-progress-fill,
+.hc-mini-bar__fill,
+.hc-pacer__bar-fill,
+.hc-drill-progress__fill {
+  transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Topbar Sound Toggle & XP Pill */
+.hc-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hc-sound-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: var(--hc-surface-elevated);
+  border: 1px solid var(--hc-border);
+  color: var(--hc-on-surface-muted);
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+
+.hc-sound-btn:hover {
+  border-color: var(--hc-accent);
+  color: var(--hc-accent);
+  background: var(--hc-surface-hover);
+}
+
+.hc-progress-pill__xp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding-inline: 0.45rem;
+  border-inline: 1px solid var(--hc-border);
+  color: var(--hc-accent);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* Celebration Toast */
+.hc-toast {
+  position: fixed;
+  top: calc(var(--topbar-height) + env(safe-area-inset-top, 0px) + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: min(92vw, 24rem);
+  max-width: 30rem;
+  padding: 0.75rem 1rem;
+  background: #141710;
+  border: 1.5px solid var(--hc-accent);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 24px rgba(223, 255, 0, 0.16);
+  animation: hc-toast-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hc-toast__icon {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  background: var(--hc-accent);
+  color: var(--hc-accent-ink);
+  flex-shrink: 0;
+}
+
+.hc-toast__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.hc-toast__body strong {
+  font-size: 0.88rem;
+  color: var(--hc-on-surface);
+  letter-spacing: 0.01em;
+}
+
+.hc-toast__body span {
+  font-size: 0.76rem;
+  color: var(--hc-on-surface-muted);
+}
+
+.hc-toast__xp {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--hc-accent-ink);
+  background: var(--hc-accent);
+  padding: 0.22rem 0.45rem;
+  flex-shrink: 0;
+}
+
+/* Telemetry XP / Rank Variants */
+.hc-stat-box__val--volt {
+  color: var(--hc-accent);
+}
+
+.hc-stat-box__val--rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 1rem;
+  color: var(--hc-on-surface);
+}
+
+.hc-stat-box__val--rank svg {
+  color: var(--hc-accent);
+}
+
+/* Pre-Session Headspace Check-In */
+.hc-checkin {
+  padding: 1.25rem 1.35rem;
+  background: var(--hc-surface-elevated);
+  border: 1px solid var(--hc-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.hc-checkin__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.hc-checkin__title {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-heading);
+  font-size: clamp(1.25rem, 2.2vw, 1.55rem);
+  letter-spacing: 0.03em;
+  line-height: 1.05;
+}
+
+.hc-checkin__pills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: 0.6rem;
+}
+
+.hc-checkin__pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.8rem 0.95rem;
+  background: var(--hc-surface);
+  border: 1px solid var(--hc-border);
+  color: var(--hc-on-surface);
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.92rem;
+  transition: border-color 160ms ease, background 160ms ease, transform 120ms ease;
+}
+
+.hc-checkin__pill:hover {
+  border-color: var(--hc-border-strong);
+  background: var(--hc-surface-hover);
+}
+
+.hc-checkin__pill.is-active {
+  border-color: var(--hc-accent);
+  background: rgba(223, 255, 0, 0.08);
+}
+
+.hc-checkin__pill-tag {
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+  color: var(--hc-on-surface-muted);
+}
+
+.hc-checkin__pill.is-active .hc-checkin__pill-tag {
+  color: var(--hc-accent);
+}
+
+.hc-checkin__rx {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1.05rem;
+  background: var(--hc-surface-secondary);
+  border-left: 3px solid var(--hc-accent);
+  animation: hc-view-enter 200ms ease both;
+}
+
+.hc-checkin__rx-copy {
+  flex: 1 1 18rem;
+}
+
+.hc-checkin__rx-copy p {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: var(--hc-on-surface);
+}
+
+/* Interactive Drill Blueprint */
+.hc-bp-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hc-pulse-ring 3.4s ease-in-out infinite;
+}
+
+.hc-blueprint__interactive {
+  border-top: 1px solid var(--hc-border);
+  background: rgba(11, 12, 9, 0.9);
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.hc-blueprint__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hc-blueprint__tab {
+  padding: 0.3rem 0.65rem;
+  background: var(--hc-surface-elevated);
+  border: 1px solid var(--hc-border);
+  color: var(--hc-on-surface-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  transition: all 140ms ease;
+}
+
+.hc-blueprint__tab:hover {
+  color: var(--hc-on-surface);
+  border-color: var(--hc-border-strong);
+}
+
+.hc-blueprint__tab.is-active {
+  background: var(--bp-accent, var(--hc-accent));
+  border-color: var(--bp-accent, var(--hc-accent));
+  color: #090a07;
+}
+
+.hc-blueprint__cue-copy {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-size: 0.86rem;
+  color: var(--hc-on-surface);
+}
+
+.hc-blueprint__cue-num {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--bp-accent, var(--hc-accent));
+}
+
+/* Coach's Quick Rep Challenge */
+.hc-challenge {
+  border-left: 3px solid var(--hc-border-strong);
+  transition: border-color 220ms ease;
+}
+
+.hc-challenge.is-solved {
+  border-left-color: var(--hc-accent);
+}
+
+.hc-challenge__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.hc-xp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid var(--hc-border);
+  color: var(--hc-on-surface-muted);
+  background: var(--hc-surface);
+  flex-shrink: 0;
+}
+
+.hc-xp-chip.is-earned {
+  border-color: var(--hc-accent);
+  color: var(--hc-accent-ink);
+  background: var(--hc-accent);
+}
+
+.hc-challenge__scenario {
+  padding: 0.8rem 0.95rem;
+  background: var(--hc-surface);
+  border: 1px solid var(--hc-border);
+}
+
+.hc-challenge__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #F59E0B;
+  margin-bottom: 0.25rem;
+}
+
+.hc-challenge__scenario p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--hc-on-surface);
+}
+
+.hc-challenge__question {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--hc-on-surface);
+}
+
+.hc-challenge__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hc-challenge__opt {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  background: var(--hc-surface);
+  border: 1px solid var(--hc-border);
+  color: var(--hc-on-surface);
+  text-align: left;
+  font-size: 0.87rem;
+  transition: border-color 150ms ease, background 150ms ease, transform 120ms ease;
+}
+
+.hc-challenge__opt:hover:not(:disabled) {
+  border-color: var(--hc-border-strong);
+  background: var(--hc-surface-hover);
+}
+
+.hc-challenge__opt-key {
+  display: grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  background: var(--hc-surface-secondary);
+  border: 1px solid var(--hc-border);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.hc-challenge__opt-text {
+  flex: 1;
+}
+
+.hc-challenge__opt-icon {
+  flex-shrink: 0;
+}
+
+.hc-challenge__opt.is-correct {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.hc-challenge__opt.is-correct .hc-challenge__opt-key {
+  background: #10B981;
+  border-color: #10B981;
+  color: #090a07;
+}
+
+.hc-challenge__opt.is-correct .hc-challenge__opt-icon {
+  color: #10B981;
+}
+
+.hc-challenge__opt.is-wrong {
+  border-color: #F43F5E;
+  background: rgba(244, 63, 94, 0.12);
+  animation: hc-shake 320ms ease;
+}
+
+.hc-challenge__opt.is-wrong .hc-challenge__opt-key {
+  background: #F43F5E;
+  border-color: #F43F5E;
+  color: #fff;
+}
+
+.hc-challenge__opt.is-wrong .hc-challenge__opt-icon {
+  color: #F43F5E;
+}
+
+.hc-challenge__feedback {
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--hc-border);
+  animation: hc-view-enter 200ms ease both;
+}
+
+.hc-challenge__feedback.is-correct {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.hc-challenge__feedback.is-wrong {
+  border-color: rgba(244, 63, 94, 0.45);
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.hc-challenge__feedback strong {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.07em;
+  margin-bottom: 0.2rem;
+}
+
+.hc-challenge__feedback.is-correct strong {
+  color: #10B981;
+}
+
+.hc-challenge__feedback.is-wrong strong {
+  color: #F43F5E;
+}
+
+.hc-challenge__feedback p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--hc-on-surface-muted);
+}
+
+.hc-challenge__retry-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Animated Breathing Pacer Orb */
+.hc-pacer__stage--orb {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.hc-pacer__orb {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.hc-pacer__orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 2px solid var(--pacer-accent, var(--hc-accent));
+  opacity: 0.4;
+  transition: transform var(--phase-duration, 4s) ease-in-out, opacity 300ms ease;
+}
+
+.hc-pacer__orb-core {
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(223, 255, 0, 0.12);
+  border: 1.5px solid var(--pacer-accent, var(--hc-accent));
+  transition: transform var(--phase-duration, 4s) ease-in-out, background 300ms ease;
+}
+
+.hc-pacer__orb.is-inhale .hc-pacer__orb-ring,
+.hc-pacer__orb.is-inhale .hc-pacer__orb-core {
+  transform: scale(1.18);
+  opacity: 0.95;
+}
+
+.hc-pacer__orb.is-hold .hc-pacer__orb-ring,
+.hc-pacer__orb.is-hold .hc-pacer__orb-core {
+  transform: scale(1.14);
+  opacity: 0.85;
+}
+
+.hc-pacer__orb.is-exhale .hc-pacer__orb-ring,
+.hc-pacer__orb.is-exhale .hc-pacer__orb-core {
+  transform: scale(0.84);
+  opacity: 0.5;
+}
+
+.hc-pacer__orb.is-done .hc-pacer__orb-core {
+  background: var(--hc-accent);
+  color: var(--hc-accent-ink);
+  transform: scale(1.05);
+}
+
+.hc-pacer__orb.is-done .hc-pacer__seconds {
+  color: var(--hc-accent-ink);
+}
+
+.hc-pacer__readout {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Drill Step Progress Bar */
+.hc-drill-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--hc-surface);
+  border: 1px solid var(--hc-border);
+  overflow: hidden;
+}
+
+.hc-drill-progress__fill {
+  height: 100%;
+  background: var(--hc-accent);
+}
+
+@media (max-width: 600px) {
+  .hc-pacer__stage--orb {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-view,
+  .hc-toast,
+  .hc-bp-pulse,
+  .hc-challenge__opt.is-wrong {
+    animation: none;
+  }
+  .hc-pacer__orb-ring,
+  .hc-pacer__orb-core,
+  .hc-progress-fill,
+  .hc-mini-bar__fill,
+  .hc-pacer__bar-fill,
+  .hc-drill-progress__fill {
+    transition: none;
+  }
+}

@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import {
+  Activity,
   ArrowRight,
   Compass,
   Flame,
   Layers,
   ShieldCheck,
   Sparkles,
+  Trophy,
   Zap,
 } from 'lucide-react';
 import {
@@ -13,6 +16,7 @@ import {
   getGameDayResetDrills,
 } from '../data/curriculum';
 import type { AppView, Subtopic } from '../types/curriculum';
+import { playTap } from '../utils/soundFx';
 import { ScribbleText } from './ScribbleText';
 
 interface HomeViewProps {
@@ -20,6 +24,14 @@ interface HomeViewProps {
   completedCount: number;
   totalSubtopics: number;
   overallPercent: number;
+  xp: number;
+  rankInfo: {
+    title: string;
+    xp: number;
+    nextTitle: string | null;
+    nextMinXp: number | null;
+    levelProgress: number;
+  };
   nextRecommended: Subtopic;
   levelStats: Array<{
     tier: 1 | 2 | 3 | 4;
@@ -36,11 +48,60 @@ interface HomeViewProps {
   onLoadSampleJourney: () => void;
 }
 
+type HeadspaceId = 'locked' | 'wired' | 'scattered' | 'flat';
+
+const HEADSPACE_OPTIONS: Array<{
+  id: HeadspaceId;
+  label: string;
+  tag: string;
+  advice: string;
+  ctaLabel: string;
+  targetSubtopicId?: string;
+}> = [
+  {
+    id: 'locked',
+    label: 'Locked In',
+    tag: 'HIGH READINESS',
+    advice:
+      'Sharp mind, steady pulse. Keep stacking momentum on your next sequential drill.',
+    ctaLabel: 'Attack Next Drill',
+  },
+  {
+    id: 'wired',
+    label: 'Nervous / Wired',
+    tag: 'OVER-AMPED',
+    advice:
+      'Your body is loading energy—don’t fight it. Run a 4-round somatic downshift to settle into your sweet spot.',
+    ctaLabel: 'Run Anxiety Downshift',
+    targetSubtopicId: 'vis-managing-anxiety',
+  },
+  {
+    id: 'scattered',
+    label: 'Scattered',
+    tag: 'NOISY MIND',
+    advice:
+      'Too many tabs open. Narrow your spotlight onto one physical target with the Focus Tunnel drill.',
+    ctaLabel: 'Open Focus Tunnel',
+    targetSubtopicId: 'staying-focus-conc',
+  },
+  {
+    id: 'flat',
+    label: 'Flat / Heavy',
+    tag: 'LOW SPARK',
+    advice:
+      'Don’t wait for hype—move first. Use the 90-second Action-First flywheel to flip your state.',
+    ctaLabel: 'Fire Up Action-First',
+    targetSubtopicId: 'motiv-first',
+  },
+];
+
 export function HomeView({
   athleteName,
   completedCount,
   totalSubtopics,
   overallPercent,
+  xp,
+  rankInfo,
   nextRecommended,
   levelStats,
   completedSet,
@@ -49,9 +110,11 @@ export function HomeView({
   onOpenTrustBriefing,
   onLoadSampleJourney,
 }: HomeViewProps) {
+  const [headspace, setHeadspace] = useState<HeadspaceId | null>(null);
   const nextCourse = COURSE_MAP[nextRecommended.courseId];
   const nextLevel = LEVELS[nextRecommended.tier];
   const gameDayDrills = getGameDayResetDrills();
+  const activeHeadspace = HEADSPACE_OPTIONS.find((h) => h.id === headspace);
 
   return (
     <div className="hc-view hc-home">
@@ -132,12 +195,21 @@ export function HomeView({
               <span className="hc-stat-box__lbl">DRILLS COMPLETE</span>
             </div>
             <div className="hc-stat-box">
-              <span className="hc-stat-box__val">10</span>
-              <span className="hc-stat-box__lbl">CONNECTED COURSES</span>
+              <span className="hc-stat-box__val hc-stat-box__val--volt">
+                {xp}
+              </span>
+              <span className="hc-stat-box__lbl">MENTAL XP</span>
             </div>
             <div className="hc-stat-box">
-              <span className="hc-stat-box__val">4</span>
-              <span className="hc-stat-box__lbl">MASTERY LEVELS</span>
+              <span className="hc-stat-box__val hc-stat-box__val--rank">
+                <Trophy size={15} aria-hidden="true" />
+                {rankInfo.title}
+              </span>
+              <span className="hc-stat-box__lbl">
+                {rankInfo.nextTitle
+                  ? `${rankInfo.nextMinXp! - xp} XP TO ${rankInfo.nextTitle}`
+                  : 'MAX RANK'}
+              </span>
             </div>
           </div>
 
@@ -151,6 +223,65 @@ export function HomeView({
             <ArrowRight size={14} aria-hidden="true" />
           </button>
         </aside>
+      </section>
+
+      {/* Pre-Session Headspace Check-In */}
+      <section className="hc-checkin" aria-labelledby="checkin-heading">
+        <div className="hc-checkin__head">
+          <div>
+            <span className="hc-mono-tag">
+              <Activity size={12} className="hc-inline-icon" aria-hidden="true" />{' '}
+              10-SECOND PULSE CHECK
+            </span>
+            <h2 id="checkin-heading" className="hc-checkin__title">
+              HOW&apos;S YOUR HEAD RIGHT NOW?
+            </h2>
+          </div>
+          <span className="hc-mono-muted">TAP TO CALIBRATE YOUR SESSION</span>
+        </div>
+
+        <div className="hc-checkin__pills" role="group" aria-label="Current headspace">
+          {HEADSPACE_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              className={`hc-checkin__pill ${
+                headspace === opt.id ? 'is-active' : ''
+              }`}
+              onClick={() => {
+                playTap();
+                setHeadspace((prev) => (prev === opt.id ? null : opt.id));
+              }}
+            >
+              <span>{opt.label}</span>
+              <span className="hc-checkin__pill-tag">{opt.tag}</span>
+            </button>
+          ))}
+        </div>
+
+        {activeHeadspace && (
+          <div className="hc-checkin__rx" aria-live="polite">
+            <div className="hc-checkin__rx-copy">
+              <span className="hc-mono-tag" style={{ color: '#DFFF00' }}>
+                COACH PRESCRIPTION · {activeHeadspace.tag}
+              </span>
+              <p>{activeHeadspace.advice}</p>
+            </div>
+            <button
+              type="button"
+              className="hc-btn hc-btn--volt"
+              onClick={() => {
+                playTap();
+                onOpenSubtopic(
+                  activeHeadspace.targetSubtopicId ?? nextRecommended.id,
+                );
+              }}
+            >
+              <span>{activeHeadspace.ctaLabel}</span>
+              <ArrowRight size={15} aria-hidden="true" />
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Up Next Sequential Focus Card */}

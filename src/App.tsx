@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BookOpen,
   Compass,
   Home,
   Layers,
   ShieldCheck,
+  Volume2,
+  VolumeX,
+  Zap,
 } from 'lucide-react';
+import {
+  CelebrationToast,
+  type ToastPayload,
+} from './components/CelebrationToast';
 import { CoursesView } from './components/CoursesView';
 import { HomeView } from './components/HomeView';
 import { JournalView } from './components/JournalView';
@@ -15,6 +22,12 @@ import { NativeDialog } from './components/NativeDialog';
 import { ALL_SUBTOPICS, LEVELS, SUBTOPIC_MAP } from './data/curriculum';
 import { useAthleteProgress } from './hooks/useAthleteProgress';
 import type { AppView } from './types/curriculum';
+import {
+  isSoundEnabled,
+  playDrillComplete,
+  playTap,
+  setSoundEnabled,
+} from './utils/soundFx';
 
 export default function App() {
   const [activeView, setActiveView] = useState<AppView>('home');
@@ -24,10 +37,34 @@ export default function App() {
   );
   const [trustDialogOpen, setTrustDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [soundOn, setSoundOn] = useState<boolean>(isSoundEnabled);
+  const [toast, setToast] = useState<ToastPayload | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  const showToast = useCallback((payload: Omit<ToastPayload, 'id'>) => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    setToast({ ...payload, id: Date.now() });
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+    }, 3200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const {
     progress,
     completedSet,
+    completedChallengesSet,
+    xp,
+    rankInfo,
     totalSubtopics,
     completedCount,
     overallPercent,
@@ -43,6 +80,7 @@ export default function App() {
     saveGameDayCue,
     setStrictSequence,
     updateProfile,
+    recordChallengeWin,
     loadSampleJourney,
     resetProgress,
   } = useAthleteProgress();
@@ -51,11 +89,13 @@ export default function App() {
     SUBTOPIC_MAP[activeSubtopicId] ?? nextRecommendedSubtopic;
 
   const navigateTo = (view: Exclude<AppView, 'lesson'>) => {
+    playTap();
     setActiveView(view);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openSubtopic = (subtopicId: string) => {
+    playTap();
     if (activeView !== 'lesson') {
       setReturnView(activeView);
     }
@@ -65,13 +105,36 @@ export default function App() {
   };
 
   const handleCompleteAndNext = (nextId: string | null) => {
+    const wasAlreadyDone = completedSet.has(activeSubtopic.id);
     markSubtopicComplete(activeSubtopic.id);
+    if (!wasAlreadyDone) {
+      playDrillComplete();
+      showToast({
+        title: `${activeSubtopic.shortTitle} Locked In!`,
+        subtitle: nextId
+          ? 'Momentum building — next drill loaded.'
+          : 'All 26 drills complete. Apex Mastery unlocked!',
+        xpLabel: '+50 XP',
+        variant: 'drill',
+      });
+    } else {
+      playTap();
+    }
     if (nextId) {
       setActiveSubtopicId(nextId);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       setActiveView('map');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleToggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+    if (next) {
+      playTap();
     }
   };
 
@@ -132,19 +195,38 @@ export default function App() {
           <div className="hc-topbar__right">
             <button
               type="button"
+              className="hc-sound-btn"
+              onClick={handleToggleSound}
+              aria-label={soundOn ? 'Mute sound effects' : 'Enable sound effects'}
+              title={soundOn ? 'Sound FX: On' : 'Sound FX: Muted'}
+            >
+              {soundOn ? (
+                <Volume2 size={16} aria-hidden="true" />
+              ) : (
+                <VolumeX size={16} aria-hidden="true" />
+              )}
+            </button>
+            <button
+              type="button"
               className="hc-progress-pill"
               onClick={() => navigateTo('journal')}
-              aria-label={`Overall progress ${completedCount} of ${totalSubtopics} drills complete`}
+              aria-label={`Overall progress ${completedCount} of ${totalSubtopics} drills complete, ${xp} XP`}
             >
               <span className="hc-progress-pill__dot" aria-hidden="true" />
               <span>
                 {completedCount}/{totalSubtopics}
+              </span>
+              <span className="hc-progress-pill__xp">
+                <Zap size={11} aria-hidden="true" />
+                {xp}
               </span>
               <span className="hc-progress-pill__pct">{overallPercent}%</span>
             </button>
           </div>
         </div>
       </header>
+
+      <CelebrationToast toast={toast} />
 
       {/* Main Content Workspace */}
       <main className="hc-main" id="main-content">
@@ -154,6 +236,8 @@ export default function App() {
             completedCount={completedCount}
             totalSubtopics={totalSubtopics}
             overallPercent={overallPercent}
+            xp={xp}
+            rankInfo={rankInfo}
             nextRecommended={nextRecommendedSubtopic}
             levelStats={levelStats}
             completedSet={completedSet}
@@ -194,6 +278,7 @@ export default function App() {
           <LessonStudio
             subtopic={activeSubtopic}
             isCompleted={completedSet.has(activeSubtopic.id)}
+            isChallengeSolved={completedChallengesSet.has(activeSubtopic.id)}
             checkedSteps={progress.checkedDrillSteps[activeSubtopic.id] ?? []}
             reflection={progress.reflections[activeSubtopic.id] ?? ''}
             gameDayCue={progress.gameDayCues[activeSubtopic.id] ?? ''}
@@ -203,7 +288,33 @@ export default function App() {
             onToggleStep={(stepIdx) => toggleDrillStep(activeSubtopic.id, stepIdx)}
             onSaveReflection={(text) => saveReflection(activeSubtopic.id, text)}
             onSaveCue={(cue) => saveGameDayCue(activeSubtopic.id, cue)}
-            onToggleComplete={() => toggleSubtopicComplete(activeSubtopic.id)}
+            onChallengeWin={() => {
+              const alreadySolved = completedChallengesSet.has(activeSubtopic.id);
+              recordChallengeWin(activeSubtopic.id);
+              if (!alreadySolved) {
+                showToast({
+                  title: 'Quick Rep Nailed!',
+                  subtitle: 'Sharp decision under game pressure.',
+                  xpLabel: '+20 XP',
+                  variant: 'challenge',
+                });
+              }
+            }}
+            onToggleComplete={() => {
+              const wasDone = completedSet.has(activeSubtopic.id);
+              toggleSubtopicComplete(activeSubtopic.id);
+              if (!wasDone) {
+                playDrillComplete();
+                showToast({
+                  title: `${activeSubtopic.shortTitle} Complete!`,
+                  subtitle: 'Added to your Athlete Mastery telemetry.',
+                  xpLabel: '+50 XP',
+                  variant: 'drill',
+                });
+              } else {
+                playTap();
+              }
+            }}
             onCompleteAndNext={handleCompleteAndNext}
           />
         )}

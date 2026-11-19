@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Play, RotateCcw, Square } from 'lucide-react';
 import type { PacerConfig } from '../types/curriculum';
+import { playDrillComplete, playPhaseCue, playTap } from '../utils/soundFx';
 
 interface BreathingPacerProps {
   config: PacerConfig;
@@ -17,14 +18,6 @@ export function BreathingPacer({ config, accent }: BreathingPacerProps) {
   const currentPhase = config.phases[phaseIdx];
 
   useEffect(() => {
-    setRunning(false);
-    setCycle(1);
-    setPhaseIdx(0);
-    setSecondsLeft(config.phases[0].seconds);
-    setCompleted(false);
-  }, [config]);
-
-  useEffect(() => {
     if (!running) return;
     const timer = window.setInterval(() => {
       setSecondsLeft((prev) => {
@@ -32,15 +25,18 @@ export function BreathingPacer({ config, accent }: BreathingPacerProps) {
         const nextPhase = phaseIdx + 1;
         if (nextPhase < config.phases.length) {
           setPhaseIdx(nextPhase);
+          playPhaseCue(config.phases[nextPhase].name);
           return config.phases[nextPhase].seconds;
         }
         if (cycle < config.cycles) {
           setCycle((c) => c + 1);
           setPhaseIdx(0);
+          playPhaseCue(config.phases[0].name);
           return config.phases[0].seconds;
         }
         setRunning(false);
         setCompleted(true);
+        playDrillComplete();
         return 0;
       });
     }, 1000);
@@ -48,6 +44,7 @@ export function BreathingPacer({ config, accent }: BreathingPacerProps) {
   }, [running, phaseIdx, cycle, config]);
 
   const handleReset = () => {
+    playTap();
     setRunning(false);
     setCycle(1);
     setPhaseIdx(0);
@@ -62,8 +59,15 @@ export function BreathingPacer({ config, accent }: BreathingPacerProps) {
       setSecondsLeft(config.phases[0].seconds);
       setCompleted(false);
       setRunning(true);
+      playPhaseCue(config.phases[0].name);
     } else {
-      setRunning((r) => !r);
+      const nextRunning = !running;
+      setRunning(nextRunning);
+      if (nextRunning) {
+        playPhaseCue(currentPhase.name);
+      } else {
+        playTap();
+      }
     }
   };
 
@@ -71,6 +75,17 @@ export function BreathingPacer({ config, accent }: BreathingPacerProps) {
     currentPhase && currentPhase.seconds > 0
       ? ((currentPhase.seconds - secondsLeft) / currentPhase.seconds) * 100
       : 100;
+
+  const phaseLower = currentPhase.name.toLowerCase();
+  const orbMode = completed
+    ? 'is-done'
+    : !running
+    ? 'is-idle'
+    : phaseLower.includes('inhale')
+    ? 'is-inhale'
+    : phaseLower.includes('exhale')
+    ? 'is-exhale'
+    : 'is-hold';
 
   return (
     <div
@@ -89,25 +104,39 @@ export function BreathingPacer({ config, accent }: BreathingPacerProps) {
         </div>
       </div>
 
-      <div className="hc-pacer__stage">
-        <div className="hc-pacer__counter">
-          <span className="hc-pacer__phase">
-            {completed ? 'LOCKED IN' : currentPhase.name}
-          </span>
-          <span className="hc-pacer__seconds">
-            {completed ? '✓' : `${secondsLeft}s`}
-          </span>
+      <div className="hc-pacer__stage hc-pacer__stage--orb">
+        <div
+          className={`hc-pacer__orb ${orbMode}`}
+          style={{
+            ['--phase-duration' as string]: `${Math.max(1, currentPhase.seconds)}s`,
+          }}
+          aria-hidden="true"
+        >
+          <div className="hc-pacer__orb-ring" />
+          <div className="hc-pacer__orb-core">
+            <span className="hc-pacer__seconds">
+              {completed ? '✓' : `${secondsLeft}s`}
+            </span>
+          </div>
         </div>
-        <p className="hc-pacer__instruction">
-          {completed
-            ? 'Protocol complete. Step back into play sharp and composed.'
-            : currentPhase.instruction}
-        </p>
-        <div className="hc-pacer__bar" aria-hidden="true">
-          <div
-            className="hc-pacer__bar-fill"
-            style={{ width: `${completed ? 100 : Math.max(8, progressRatio)}%` }}
-          />
+
+        <div className="hc-pacer__readout">
+          <div className="hc-pacer__counter">
+            <span className="hc-pacer__phase">
+              {completed ? 'LOCKED IN' : currentPhase.name}
+            </span>
+          </div>
+          <p className="hc-pacer__instruction">
+            {completed
+              ? 'Protocol complete. Step back into play sharp and composed.'
+              : currentPhase.instruction}
+          </p>
+          <div className="hc-pacer__bar" aria-hidden="true">
+            <div
+              className="hc-pacer__bar-fill"
+              style={{ width: `${completed ? 100 : Math.max(8, progressRatio)}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -131,8 +160,18 @@ export function BreathingPacer({ config, accent }: BreathingPacerProps) {
           className="hc-btn hc-btn--volt"
           onClick={handleToggle}
         >
-          {running ? <Square size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
-          <span>{running ? 'Pause Pacer' : completed ? 'Run Again' : 'Start Protocol'}</span>
+          {running ? (
+            <Square size={15} aria-hidden="true" />
+          ) : (
+            <Play size={15} aria-hidden="true" />
+          )}
+          <span>
+            {running
+              ? 'Pause Pacer'
+              : completed
+              ? 'Run Again'
+              : 'Start Protocol'}
+          </span>
         </button>
         <button
           type="button"

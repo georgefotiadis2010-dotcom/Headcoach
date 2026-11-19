@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import type { BlueprintKind } from '../types/curriculum';
+import { playTap } from '../utils/soundFx';
 
 interface DrillBlueprintProps {
   kind: BlueprintKind;
   color: string;
   label: string;
   courseNumber: string;
+  cues?: string[];
 }
 
 /**
@@ -15,7 +18,9 @@ export function DrillBlueprint({
   color,
   label,
   courseNumber,
+  cues = [],
 }: DrillBlueprintProps) {
+  const [activeCueIdx, setActiveCueIdx] = useState(0);
   const volt = '#DFFF00';
   const chalk = '#F4F4EE';
   const muted = 'rgba(244, 244, 238, 0.25)';
@@ -50,8 +55,48 @@ export function DrillBlueprint({
         {/* Corner court ticks */}
         <path d="M16 32 V16 H32 M608 16 H624 V32 M16 268 V284 H32 M608 284 H624 V268" stroke={muted} strokeWidth="1.5" fill="none" />
 
+        {/* Live tactical radar pulse */}
+        <circle
+          cx="320"
+          cy="150"
+          r="118"
+          fill="none"
+          stroke={color}
+          strokeOpacity="0.16"
+          strokeWidth="1"
+          className="hc-bp-pulse"
+        />
+
         {renderDiagram(kind, color, volt, chalk, muted)}
       </svg>
+
+      {cues.length > 0 && (
+        <div className="hc-blueprint__interactive">
+          <div className="hc-blueprint__tabs" role="tablist" aria-label="Tactical blueprint cues">
+            {cues.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                role="tab"
+                aria-selected={activeCueIdx === idx}
+                className={`hc-blueprint__tab ${
+                  activeCueIdx === idx ? 'is-active' : ''
+                }`}
+                onClick={() => {
+                  playTap();
+                  setActiveCueIdx(idx);
+                }}
+              >
+                CUE 0{idx + 1}
+              </button>
+            ))}
+          </div>
+          <p className="hc-blueprint__cue-copy" aria-live="polite">
+            <span className="hc-blueprint__cue-num">0{activeCueIdx + 1}</span>
+            <span>{cues[activeCueIdx] ?? cues[0]}</span>
+          </p>
+        </div>
+      )}
     </div>
   );
 }

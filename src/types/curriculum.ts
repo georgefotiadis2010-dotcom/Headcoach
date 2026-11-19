@@ -108,10 +108,19 @@ export interface LevelInfo {
 
 export type AppView = 'home' | 'map' | 'courses' | 'lesson' | 'journal';
 
+export interface MentalChallenge {
+  situation: string;
+  question: string;
+  options: [string, string, string];
+  correctIndex: 0 | 1 | 2;
+  coachTakeaway: string;
+}
+
 export interface AthleteProgress {
   athleteName: string;
   sport: string;
   completedSubtopics: string[];
+  completedChallenges: string[];
   checkedDrillSteps: Record<string, number[]>;
   reflections: Record<string, string>;
   gameDayCues: Record<string, string>;

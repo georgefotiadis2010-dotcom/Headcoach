@@ -8,6 +8,7 @@ const DEFAULT_PROGRESS: AthleteProgress = {
   athleteName: 'Junior Athlete',
   sport: 'Elite Development',
   completedSubtopics: [],
+  completedChallenges: [],
   checkedDrillSteps: {},
   reflections: {},
   gameDayCues: {},
@@ -27,6 +28,13 @@ const SAMPLE_PROGRESS: AthleteProgress = {
     'found-growth',
     'found-inputs',
     'motiv-first',
+  ],
+  completedChallenges: [
+    'intro-strengths',
+    'intro-coaching',
+    'intro-primitives',
+    'found-hunger',
+    'found-growth',
   ],
   checkedDrillSteps: {
     'intro-strengths': [0, 1, 2],
@@ -73,6 +81,9 @@ function loadInitialProgress(): AthleteProgress {
       completedSubtopics: Array.isArray(parsed.completedSubtopics)
         ? parsed.completedSubtopics
         : [],
+      completedChallenges: Array.isArray(parsed.completedChallenges)
+        ? parsed.completedChallenges
+        : [],
       checkedDrillSteps: parsed.checkedDrillSteps ?? {},
       reflections: parsed.reflections ?? {},
       gameDayCues: parsed.gameDayCues ?? {},
@@ -97,6 +108,62 @@ export function useAthleteProgress() {
     () => new Set(progress.completedSubtopics),
     [progress.completedSubtopics],
   );
+
+  const completedChallengesSet = useMemo(
+    () => new Set(progress.completedChallenges),
+    [progress.completedChallenges],
+  );
+
+  const xp = useMemo(() => {
+    const drillXp = progress.completedSubtopics.length * 50;
+    const challengeXp = progress.completedChallenges.length * 20;
+    const stepXp =
+      Object.values(progress.checkedDrillSteps).reduce(
+        (acc, steps) => acc + steps.length,
+        0,
+      ) * 5;
+    const cueXp = Object.values(progress.gameDayCues).filter((v) =>
+      v.trim(),
+    ).length * 10;
+    const noteXp = Object.values(progress.reflections).filter((v) =>
+      v.trim(),
+    ).length * 10;
+    return drillXp + challengeXp + stepXp + cueXp + noteXp;
+  }, [progress]);
+
+  const rankInfo = useMemo(() => {
+    const ranks = [
+      { title: 'ROOKIE', minXp: 0 },
+      { title: 'CHALLENGER', minXp: 150 },
+      { title: 'STARTER', minXp: 400 },
+      { title: 'CAPTAIN', minXp: 800 },
+      { title: 'ALL-STAR', minXp: 1300 },
+      { title: 'APEX', minXp: 1900 },
+    ];
+    let current = ranks[0];
+    let next: (typeof ranks)[number] | null = ranks[1];
+    for (let i = 0; i < ranks.length; i++) {
+      if (xp >= ranks[i].minXp) {
+        current = ranks[i];
+        next = ranks[i + 1] ?? null;
+      }
+    }
+    const levelProgress = next
+      ? Math.min(
+          100,
+          Math.round(
+            ((xp - current.minXp) / (next.minXp - current.minXp)) * 100,
+          ),
+        )
+      : 100;
+    return {
+      title: current.title,
+      xp,
+      nextTitle: next?.title ?? null,
+      nextMinXp: next?.minXp ?? null,
+      levelProgress,
+    };
+  }, [xp]);
 
   const totalSubtopics = ALL_SUBTOPICS.length;
   const completedCount = progress.completedSubtopics.length;
@@ -237,6 +304,16 @@ export function useAthleteProgress() {
     setProgress(SAMPLE_PROGRESS);
   }, []);
 
+  const recordChallengeWin = useCallback((subtopicId: string) => {
+    setProgress((prev) => {
+      if (prev.completedChallenges.includes(subtopicId)) return prev;
+      return {
+        ...prev,
+        completedChallenges: [...prev.completedChallenges, subtopicId],
+      };
+    });
+  }, []);
+
   const resetProgress = useCallback(() => {
     setProgress(DEFAULT_PROGRESS);
   }, []);
@@ -244,6 +321,9 @@ export function useAthleteProgress() {
   return {
     progress,
     completedSet,
+    completedChallengesSet,
+    xp,
+    rankInfo,
     totalSubtopics,
     completedCount,
     overallPercent,
@@ -259,6 +339,7 @@ export function useAthleteProgress() {
     saveGameDayCue,
     setStrictSequence,
     updateProfile,
+    recordChallengeWin,
     loadSampleJourney,
     resetProgress,
   };

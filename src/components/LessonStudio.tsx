@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,12 +13,15 @@ import {
 } from 'lucide-react';
 import { ALL_SUBTOPICS, COURSE_MAP, LEVELS } from '../data/curriculum';
 import type { Subtopic } from '../types/curriculum';
+import { playStepCheck, playTap } from '../utils/soundFx';
 import { BreathingPacer } from './BreathingPacer';
 import { DrillBlueprint } from './DrillBlueprint';
+import { MentalRepChallenge } from './MentalRepChallenge';
 
 interface LessonStudioProps {
   subtopic: Subtopic;
   isCompleted: boolean;
+  isChallengeSolved: boolean;
   checkedSteps: number[];
   reflection: string;
   gameDayCue: string;
@@ -28,6 +31,7 @@ interface LessonStudioProps {
   onToggleStep: (stepIndex: number) => void;
   onSaveReflection: (text: string) => void;
   onSaveCue: (cue: string) => void;
+  onChallengeWin: () => void;
   onToggleComplete: () => void;
   onCompleteAndNext: (nextId: string | null) => void;
 }
@@ -35,6 +39,7 @@ interface LessonStudioProps {
 export function LessonStudio({
   subtopic,
   isCompleted,
+  isChallengeSolved,
   checkedSteps,
   reflection,
   gameDayCue,
@@ -44,6 +49,7 @@ export function LessonStudio({
   onToggleStep,
   onSaveReflection,
   onSaveCue,
+  onChallengeWin,
   onToggleComplete,
   onCompleteAndNext,
 }: LessonStudioProps) {
@@ -60,6 +66,32 @@ export function LessonStudio({
       : null;
 
   const allStepsChecked = checkedSteps.length === subtopic.drillSteps.length;
+  const stepsPercent = Math.round(
+    (checkedSteps.length / Math.max(1, subtopic.drillSteps.length)) * 100,
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === 'ArrowLeft' && prevSub) {
+        playTap();
+        onSelectSubtopic(prevSub.id);
+      } else if (e.key === 'ArrowRight' && nextSub) {
+        playTap();
+        onSelectSubtopic(nextSub.id);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [prevSub, nextSub, onSelectSubtopic]);
 
   return (
     <div
@@ -174,10 +206,12 @@ export function LessonStudio({
 
             {mediaMode === 'blueprint' ? (
               <DrillBlueprint
+                key={subtopic.id}
                 kind={subtopic.blueprintKind}
                 color={subtopic.color}
                 label={subtopic.blueprintLabel}
                 courseNumber={course.number}
+                cues={subtopic.bullets}
               />
             ) : (
               <div className="hc-video-stage">
@@ -242,9 +276,21 @@ export function LessonStudio({
             </ul>
           </section>
 
+          {/* Interactive Coach's Quick Rep Challenge */}
+          <MentalRepChallenge
+            key={subtopic.id}
+            subtopicId={subtopic.id}
+            isSolved={isChallengeSolved}
+            onWin={onChallengeWin}
+          />
+
           {/* Optional Interactive Breathing / Reset Pacer */}
           {subtopic.pacer && (
-            <BreathingPacer config={subtopic.pacer} accent={subtopic.color} />
+            <BreathingPacer
+              key={subtopic.id}
+              config={subtopic.pacer}
+              accent={subtopic.color}
+            />
           )}
         </div>
 
@@ -264,6 +310,13 @@ export function LessonStudio({
               </span>
             </div>
 
+            <div className="hc-drill-progress" aria-hidden="true">
+              <div
+                className="hc-drill-progress__fill"
+                style={{ width: `${stepsPercent}%` }}
+              />
+            </div>
+
             <div className="hc-checklist">
               {subtopic.drillSteps.map((step, idx) => {
                 const checked = checkedSteps.includes(idx);
@@ -275,7 +328,14 @@ export function LessonStudio({
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() => onToggleStep(idx)}
+                      onChange={() => {
+                        if (!checked) {
+                          playStepCheck(checkedSteps.length);
+                        } else {
+                          playTap();
+                        }
+                        onToggleStep(idx);
+                      }}
                     />
                     <span className="hc-check-item__box" aria-hidden="true">
                       {checked && <Check size={13} />}
